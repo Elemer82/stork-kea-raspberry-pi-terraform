@@ -1,0 +1,62 @@
+version: '3.8'
+
+services:
+  stork-db:
+    image: postgres:13
+    container_name: stork-db
+    environment:
+      POSTGRES_USER: stork
+      POSTGRES_PASSWORD: storkpass
+      POSTGRES_DB: stork
+    volumes:
+      - stork-db-data:/var/lib/postgresql/data
+    networks:
+      - stork-net
+    restart: unless-stopped
+
+  stork-server:
+    image: stork-arm  # Your custom Stork Server image built from the Dockerfile
+    container_name: stork-server
+    depends_on:
+      - stork-db
+    environment:
+      STORK_DB_HOST: stork-db
+      STORK_DB_PORT: 5432
+      STORK_DB_USER: stork
+      STORK_DB_PASSWORD: storkpass
+      STORK_DB_NAME: stork
+    ports:
+      - "8080:8080"  # Stork UI
+    networks:
+      - stork-net
+    restart: unless-stopped
+
+  stork-agent:
+    image: stork-arm  # Same image, runs the agent instead of server
+    container_name: stork-agent
+    command: ["/stork/build/src/stork-agent"]
+    depends_on:
+      - kea
+    networks:
+      - stork-net
+    restart: unless-stopped
+
+  kea:
+    image: iscproject/kea:2.5.2-arm64  # Use ARM-compatible tag or custom build
+    container_name: kea
+    volumes:
+      - ./kea-config:/etc/kea
+    networks:
+      - stork-net
+    ports:
+      - "67:67/udp"     # DHCPv4
+      - "6479:6479/tcp" # Kea Control Agent API
+    restart: unless-stopped
+    command: ["kea-dhcp4", "-c", "/etc/kea/kea-dhcp4.conf"]
+
+volumes:
+  stork-db-data:
+
+networks:
+  stork-net:
+    driver: bridge
