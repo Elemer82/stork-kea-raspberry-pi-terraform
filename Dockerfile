@@ -3,7 +3,7 @@ FROM debian:bullseye-slim
 
 # Set environment variables
 ENV DEBIAN_FRONTEND=noninteractive
-ENV STORK_VERSION=1.12.0
+ENV STORK_VERSION=1.15.1
 
 # Install required dependencies
 RUN apt-get update && \
